@@ -4,6 +4,8 @@ Created on Wed Sep  8 15:10:09 2021
 
 @author: t
 """
+from __future__ import division
+
 #import numpy as np
 import pygame
 from sys import exit
@@ -53,7 +55,7 @@ class Orc(pygame.sprite.Sprite):
         self.speed = speed
         
         self.image = pygame.Surface([sw(size),sw(size)])
-        pygame.draw.circle(self.image,col,(sw(size)/2,sw(size)/2),sw(size/2))
+        pygame.draw.circle(self.image,col,(sw(size)//2,sw(size)//2),sw(size//2))
         self.image.convert_alpha()
         self.rect = self.image.get_rect(center=(x0,y0))
 
@@ -97,7 +99,8 @@ orc_group.add(orclist)
 
 # road bar
 road_surf = pygame.Surface( (sw(1),YDIM) )
-road_surf.fill('yellow')
+YELLOW = pygame.Color(255, 255, 0)
+road_surf.fill(YELLOW)
 road_rect = road_surf.get_rect(center = sc(0,0))
 
 pressed = 0 
