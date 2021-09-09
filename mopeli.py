@@ -9,7 +9,7 @@ from __future__ import division
 #import numpy as np
 import pygame
 from sys import exit
-from random import randint
+from random import randint, choice
 
 
 
@@ -36,7 +36,7 @@ def sy(y):
     return round(-y*PIX_PER_DEGREE + YDIM2)
 
 def sc(x,y):
-    return (round(x*PIX_PER_DEGREE + XDIM2),round(y*PIX_PER_DEGREE + YDIM2))
+    return (round(x*PIX_PER_DEGREE + XDIM2),round(-y*PIX_PER_DEGREE + YDIM2))
 
 def sw(x):
     #transform width 
@@ -55,7 +55,8 @@ class Orc(pygame.sprite.Sprite):
         self.speed = speed
         
         self.image = pygame.Surface([sw(size),sw(size)])
-        pygame.draw.circle(self.image,col,(sw(size)//2,sw(size)//2),sw(size//2))
+        self.image.set_colorkey((0,0,0))
+        pygame.draw.circle(self.image,col,(sw(size)//2,sw(size)//2),sw(size)//2)
         self.image.convert_alpha()
         self.rect = self.image.get_rect(center=(x0,y0))
 
@@ -89,9 +90,10 @@ n_orcs = 6
 
 orclist = []
 for i in range(n_orcs):
-     orclist.append( Orc(sx(randint(-40,40)),sy(randint(-22,22)),randint(-5,5)/10) )
-     
-
+    speed = choice([-1,1])*randint(10,50)/100
+    orclist.append( Orc(sx(randint(-40,40)),sy(randint(-21,21)),speed))
+                   
+                   
 orc_group = pygame.sprite.Group()
 orc_group.add(orclist)
 
