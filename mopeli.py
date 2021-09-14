@@ -19,8 +19,6 @@ YDIM = 1080
 XDIM = 1920
 FPS = 60
 
-
-# precalculate to avoid gazillion (slow) divisions
 XDIM2 = XDIM/2
 YDIM2 = YDIM/2
 
@@ -93,16 +91,6 @@ class Orc_random(pygame.sprite.Sprite):
        self.mode = mode
        self.a = a
        
-       
-       # if mode==1:
-       #     self.vx = choice([-1,1]) * maxwell(loc=0,scale =a)
-       #     self.vy = 0
-           
-       # if mode==2:
-       #     self.vx = choice([-1,1]) * maxwell(loc=0,scale=a)
-       #     self.vy = choice([-1,1]) * maxwell(loc=0,scale=a)
-       
-       
        self.setspeeds()
        
        self.image = pygame.Surface([self.size,self.size])
@@ -117,13 +105,13 @@ class Orc_random(pygame.sprite.Sprite):
         self.flip()
           
     def setspeeds(self):
-       if mode==1:
-           self.vx = sw( choice([-1,1]) * maxwell.rvs(loc=0,scale =self.a) )/10
+       if self.mode==1:
+           self.vx = sw( choice([-1,1]) * maxwell.rvs(loc=0,scale =self.a) )
            self.vy = 0
            
-       if mode==2:
-           self.vx = sw( choice([-1,1]) * maxwell.rvs(loc=0,scale=self.a) )/10
-           self.vy = sw( choice([-1,1]) * maxwell.rvs(loc=0,scale=self.a) )/10
+       if self.mode==2:
+           self.vx = sw( choice([-1,1]) * maxwell.rvs(loc=0,scale=self.a) )
+           self.vy = sw( choice([-1,1]) * maxwell.rvs(loc=0,scale=self.a) )
        
     
     def flip(self):
@@ -158,7 +146,7 @@ class Road(pygame.sprite.Sprite):
        super().__init__()
        self.col = 'yellow'
        self.image = pygame.Surface( (sw(1),YDIM) )
-       #YELLOW = pygame.Color(255, 255, 0)
+       
        self.image.fill(self.col)
        self.image.convert_alpha()
        self.rect = self.image.get_rect(center = sc(0,0))
@@ -170,8 +158,7 @@ class Road(pygame.sprite.Sprite):
        
      
         
-def create_orcs(n,mode):
-    n_orcs = n
+def create_orcs(n_orcs,mode):
     
     orclist = []
     for i in range(n_orcs):
@@ -184,11 +171,10 @@ def create_orcs(n,mode):
         orclist.append( Orc(sx(randint(-40,40)),sy(randint(-21,21)),xspeed,yspeed))
     return orclist
 
-def create_orcs_random(n,mode):
-    n_orcs = n
-    
+def create_orcs_random(n_orcs,mode):
+        
     orclist = []
-    a=2
+    a=0.2
     for i in range(n_orcs):
         
         orclist.append( Orc_random(mode, a))
@@ -237,8 +223,10 @@ def showhighscore():
         for evt in pygame.event.get():
             if evt.type == pygame.KEYDOWN:
                 return()
-    
-        
+            elif evt.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            
         screen.fill((0, 0, 0))
         i=0
         welcome_surface = myfont.render('High scores',False,(128,128,128) )        
@@ -269,7 +257,9 @@ def gameover(name,score):
         for evt in pygame.event.get():
             if evt.type == pygame.KEYDOWN and evt.key == pygame.K_ESCAPE:                
                     return() 
-
+            elif evt.type == pygame.QUIT:
+                pygame.quit()
+                exit()
 
         screen.fill((0, 0, 0))
         
@@ -313,8 +303,6 @@ myfont = pygame.font.SysFont('arial', 30)
 
 #scores
 d=shelve.open('score.txt')
-
-
 
 
 while True:
@@ -379,8 +367,6 @@ while True:
         road.update()
         road.draw(screen)          
             #screen.blit(road_surf, road_rect)
-         
-            
         
         
         orc_group.update()
@@ -411,7 +397,6 @@ while True:
     else:
                 
         screen.fill((0,0,0))
-        
        
         welcome_surface = myfont.render('Welcome to mopeli, press 1 for horizontal movement, press 2 for random movement, press h for highscores',False,(128,128,128) )        
         welcome_surface_rect = welcome_surface.get_rect(center = sc(0,0))
