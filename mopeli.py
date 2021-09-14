@@ -102,9 +102,9 @@ class Orc_random(pygame.sprite.Sprite):
        #     self.vx = choice([-1,1]) * maxwell(loc=0,scale=a)
        #     self.vy = choice([-1,1]) * maxwell(loc=0,scale=a)
        
-       print('here')
+       
        self.setspeeds()
-       print(self.vx)       
+       
        self.image = pygame.Surface([self.size,self.size])
        self.image.set_colorkey((0,0,0))
        pygame.draw.circle(self.image,col,(self.size//2,self.size//2),self.size//2)
@@ -364,6 +364,7 @@ while True:
         # print("peli käy")
         screen.fill((0, 0, 0))
         
+        road.sprite.setcolor("gray20")
         if pressed:
             hit = pygame.sprite.groupcollide(road, orc_group,False,False)
             
@@ -375,10 +376,10 @@ while True:
                 road.sprite.setcolor('yellow')
                 score += 1
             
-            road.update()
-            road.draw(screen)          
+        road.update()
+        road.draw(screen)          
             #screen.blit(road_surf, road_rect)
-            print(score)
+         
             
         
         
@@ -404,7 +405,7 @@ while True:
             mode = 0
             game_active = False
             gameover(name,score)
-            print("huhuu")
+         
                      
          
     else:
