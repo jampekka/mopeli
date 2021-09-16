@@ -403,6 +403,8 @@ while True:
        
         screen.blit(welcome_surface,welcome_surface_rect)
 
+        pressed = 0
+
         
     pygame.display.update()
     clock.tick(FPS)
