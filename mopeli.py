@@ -362,7 +362,7 @@ def readscene():
 pygame.init()
 pygame.font.init()
 
-screen = pygame.display.set_mode((XDIM,YDIM))
+screen = pygame.display.set_mode((XDIM,YDIM), flags=pygame.NOFRAME | pygame.SCALED)
 pygame.display.set_caption('Mopeli')
 
 clock = pygame.time.Clock()
