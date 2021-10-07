@@ -9,9 +9,11 @@ developed with pygame 2.0.1 (SDL 2.0.14, Python 3.8.10)
 #import numpy as np
 import pygame
 from sys import exit
-from random import randint, choice
+from random import random,randint, choice
 from scipy.stats import maxwell
+import csv
 import shelve
+import pandas
 
 
 
@@ -25,14 +27,20 @@ YDIM2 = YDIM/2
 HORIZONTAL_FOV = 80
 PIX_PER_DEGREE = XDIM / HORIZONTAL_FOV
 
+LOGFILE = 'trial_log.csv'
 
-# transform viewing angle coordinates to screen coordinates
 
+# transform natural coordinates to screen coordinates
+
+# -1,1 -> xdim, ydim
 def sx(x):
-    return round(x*PIX_PER_DEGREE + XDIM2)
+    return round(x * 0.5 * XDIM + XDIM2)
 
 def sy(y):
-    return round(-y*PIX_PER_DEGREE + YDIM2)
+    return round(-y * 0.5 * YDIM + YDIM2)
+
+
+#-80,80 -> xdim,ydim
 
 def sc(x,y):
     return (round(x*PIX_PER_DEGREE + XDIM2),round(-y*PIX_PER_DEGREE + YDIM2))
@@ -43,6 +51,7 @@ def sw(x):
 
 
 class Orc(pygame.sprite.Sprite):
+    # orcs that die when travelling off screen
     def __init__(self,x0,y0,vx,vy):
        super().__init__()
        col = pygame.Color(255, 255, 255) 
@@ -51,26 +60,46 @@ class Orc(pygame.sprite.Sprite):
        size = 3
                
        self.size = sw(size)
+       self.x0 = x0
+       self.y0 = y0
+       
+       self.vx0 = vx
+       self.vy0 = vy
+
        self.vx = sw(vx)
-       self.vy = sw(vy)
+       self.vy= sw(vy)
+
        
        self.image = pygame.Surface([self.size,self.size])
        self.image.set_colorkey((0,0,0))
        pygame.draw.circle(self.image,col,(self.size//2,self.size//2),self.size//2)
        self.image.convert_alpha()
-       self.rect = self.image.get_rect(center=(x0,y0))
-    
-    def update(self):
+       self.rect = self.image.get_rect(center=(sx(self.x0),sy(self.y0)))
+       self.created_time = pygame.time.get_ticks() - start_time
        
+       self.writelog()
+       
+           
+    def writelog(self):
+        
+        with open(LOGFILE, 'a+', newline='') as csvfile:
+            spamwriter = csv.writer(csvfile, delimiter=',',
+                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            spamwriter.writerow([self.created_time,self.x0,self.y0,self.vx0,self.vy0])           
+    
+    def update(self):       
        self.rect.x += self.vx
        self.rect.y += self.vy
        self.flip()
     
     def flip(self):
-       if self.rect.x >= XDIM:
-           self.rect.x = 0
-       elif self.rect.x < (0-self.size):
-           self.rect.x = XDIM
+       if self.rect.x >= XDIM and self.vx>0:
+           
+           self.kill()
+       elif self.rect.x < (0-self.size) and self.vx<0:
+           
+           self.kill()
+           
        if self.rect.y <= 0:
            self.vy = -self.vy
            self.rect.y += 1
@@ -91,14 +120,32 @@ class Orc_random(pygame.sprite.Sprite):
        self.mode = mode
        self.a = a
        
-       self.setspeeds()
+       
        
        self.image = pygame.Surface([self.size,self.size])
        self.image.set_colorkey((0,0,0))
        pygame.draw.circle(self.image,col,(self.size//2,self.size//2),self.size//2)
        self.image.convert_alpha()
-       self.rect = self.image.get_rect( center=(randint(0,XDIM),(randint(0,YDIM-self.size) )))
-    
+       
+       self.x0 = choice([-1,1])
+       
+       self.y0 = choice([-1,1])*random()
+       self.setspeeds()
+       
+       self.rect = self.image.get_rect( center = (sx(self.x0),sy(self.y0)) )
+           
+       
+       
+       
+      
+    def writelog(self):
+        self.created_time = pygame.time.get_ticks() -start_time
+        
+        with open(LOGFILE, 'a+', newline='') as csvfile:
+            spamwriter = csv.writer(csvfile, delimiter=',',
+                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            spamwriter.writerow([self.created_time,self.x0,self.y0,self.vx0,self.vy0])
+        
     def update(self):
         self.rect.x += self.vx
         self.rect.y += self.vy
@@ -106,12 +153,17 @@ class Orc_random(pygame.sprite.Sprite):
           
     def setspeeds(self):
        if self.mode==1:
-           self.vx = sw( choice([-1,1]) * maxwell.rvs(loc=0,scale =self.a) )
+           self.vy0=0
+           self.vx0 = -self.x0 * maxwell.rvs(loc=0,scale =self.a)
+           self.vx = sw( self.vx0 )
            self.vy = 0
            
        if self.mode==2:
-           self.vx = sw( choice([-1,1]) * maxwell.rvs(loc=0,scale=self.a) )
-           self.vy = sw( choice([-1,1]) * maxwell.rvs(loc=0,scale=self.a) )
+           self.vx0 = -self.x0 * maxwell.rvs(loc=0,scale =self.a)
+           self.vy0 = choice([-1,1]) * maxwell.rvs(loc=0,scale =self.a)
+           
+           self.vx = sw( self.vx0 )
+           self.vy = sw( self.vy0 )
        
     
     def flip(self):
@@ -124,6 +176,7 @@ class Orc_random(pygame.sprite.Sprite):
                self.rect.x = XDIM-1
            self.rect.y = randint(0,YDIM-self.size)
            
+           self.writelog()
            
        elif self.rect.x < (0-self.size):
            self.setspeeds()
@@ -132,6 +185,7 @@ class Orc_random(pygame.sprite.Sprite):
            else:
                self.rect.x = XDIM-1
            self.rect.y = randint(0,YDIM-self.size)
+           self.writelog()
            
            
        if self.rect.y <= 0:
@@ -179,8 +233,8 @@ def create_orcs_random(n_orcs,mode):
         
         orclist.append( Orc_random(mode, a))
     return orclist    
-            
-def getname():
+
+def getstring(message):
     
     name = ""
         
@@ -197,7 +251,7 @@ def getname():
                 pygame.quit()
                 exit()
         screen.fill((0, 0, 0))
-        welcome_surface = myfont.render('Please enter your name and press enter',False,(128,128,128) )        
+        welcome_surface = myfont.render(message,False,(128,128,128) )        
         welcome_surface_rect = welcome_surface.get_rect(center = sc(0,2))
         screen.blit(welcome_surface,welcome_surface_rect)
           
@@ -206,6 +260,12 @@ def getname():
         rect.center = screen.get_rect().center
         screen.blit(block, rect)
         pygame.display.flip()
+    return name
+
+           
+def getname():
+    message = 'Please enter your name and press enter'
+    name = getstring(message)
     return name
 
 def showhighscore():
@@ -276,7 +336,47 @@ def gameover(name,score):
         pygame.display.update()
         
     
-  
+def start_countdown():
+    screen.fill((0, 0, 0))
+    delaylen = 3
+    delaystart = pygame.time.get_ticks()
+    while True:
+        for evt in pygame.event.get():            
+            if evt.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+        screen.fill((0, 0, 0))
+        curtime = (pygame.time.get_ticks() - delaystart) //1000
+        
+        countdown = delaylen - curtime
+                
+        welcome_surface = myfont.render('Game starts: '+ str(countdown),False,(128,128,128) )        
+        welcome_surface_rect = welcome_surface.get_rect(center = sc(0,0))
+        screen.blit(welcome_surface,welcome_surface_rect)
+        pygame.display.flip()
+        if countdown <=0:
+           return    
+    
+def readscene():
+    ok = 0  # return null if cant read scenefile.. 
+    while not ok:
+        message = 'enter scenary file (default: scene1.csv)'
+        scenefile = getstring(message)
+        
+        if not scenefile:
+            scenefile = 'scene1.csv'
+        try:
+            df = pandas.read_csv(scenefile,names=['time','x0','y0','vx0','vy0'])
+            print('read ' + scenefile)
+            ok=1
+        
+        except:
+            print('problem reading ' + scenefile)
+            ok=0
+        
+    return df
+
+    
 # main
 
 pygame.init()
@@ -287,7 +387,6 @@ pygame.display.set_caption('Mopeli')
 
 clock = pygame.time.Clock()
 game_active = False
-start_time = 0
 score = 0
 
 
@@ -327,27 +426,60 @@ while True:
                 # print('nappi ylös')
                 
         else:
+        # mainmenu
             if event.type == pygame.KEYDOWN :
                 if event.key == pygame.K_1:
                     mode = 1
                 elif event.key == pygame.K_2:
                     mode = 2
+                elif event.key == pygame.K_3:
+                    mode = 3
+                    df = readscene()
+                    rowindex = 0
                 elif event.key == pygame.K_h:
                     showhighscore()
                     
                 if mode:   
+                    
                     name = getname()
+                    print("peli alkaa!")
+                    start_countdown()
+                    start_time = pygame.time.get_ticks()
+                    with open(LOGFILE, 'w+', newline='') as csvfile:
+                        spamwriter = csv.writer(csvfile, delimiter=',',
+                                         quotechar='|', quoting=csv.QUOTE_MINIMAL)
+
+                    
                     orc_group = pygame.sprite.Group()
                     #orc_group.add(create_orcs(6,mode))
-                    
-                    orc_group.add(create_orcs_random(7,mode))
+                    if mode < 3:
+                        orc_group.add(create_orcs_random(7,mode))
                     score = 0
                     game_active = True
-                    start_time = pygame.time.get_ticks()
-                    print("peli alkaa!")
-
+                                        
+                    
+                    
+                    #create file
+                        
+                    
 
     if game_active:
+        time = pygame.time.get_ticks() - start_time
+        
+        timeleft = trial_length-time//1000
+        
+        if mode == 3:
+            try:
+                row = df.iloc[rowindex]
+                ok = 1
+            except:
+                
+                ok = 0
+            if row.time <= time and ok:
+                print('row number: ' +str(rowindex) + ' ' + str(time))                    
+                orc_group.add( Orc(row.x0,row.y0,row.vx0,row.vy0) )
+                rowindex += 1
+            
         
         # print("peli käy")
         screen.fill((0, 0, 0))
@@ -358,7 +490,7 @@ while True:
             
             if hit:
                 road.sprite.setcolor('red')
-                score -= 10
+                score -=4
                
             else:
                 road.sprite.setcolor('yellow')
@@ -372,7 +504,7 @@ while True:
         orc_group.update()
         orc_group.draw(screen)        
         
-        time = trial_length-(pygame.time.get_ticks() - start_time)//1000
+        
         
         name_surface = myfont.render('Player: '+name,False,'gray')   
         name_surface_rect = name_surface.get_rect(topleft = (0,0))
@@ -383,11 +515,11 @@ while True:
         screen.blit(score_surface,score_surface_rect)
         
         
-        time_surface = myfont.render('time '+str(time),False,'gray')
+        time_surface = myfont.render('time '+str(timeleft),False,'gray')
         time_surface_rect = score_surface.get_rect(topleft = (0,sw(3)))
         screen.blit(time_surface,time_surface_rect)
         
-        if time <= 0:
+        if timeleft <= 0:
             mode = 0
             game_active = False
             gameover(name,score)
@@ -398,7 +530,7 @@ while True:
                 
         screen.fill((0,0,0))
        
-        welcome_surface = myfont.render('Welcome to mopeli, press 1 for horizontal movement, press 2 for random movement, press h for highscores',False,(128,128,128) )        
+        welcome_surface = myfont.render('Welcome to mopeli, press 1 for horizontal movement, press 2 for random movement, press 3 to read scenario file,  press h for highscores',False,(128,128,128) )        
         welcome_surface_rect = welcome_surface.get_rect(center = sc(0,0))
        
         screen.blit(welcome_surface,welcome_surface_rect)
