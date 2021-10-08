@@ -235,18 +235,16 @@ def create_orcs_random(n_orcs,mode):
     return orclist    
 
 def getstring(message):
-    
     name = ""
-        
     while True:
         for evt in pygame.event.get():
             if evt.type == pygame.KEYDOWN:
-                if evt.unicode.isalpha():
-                    name += evt .unicode
-                elif evt.key == pygame.K_BACKSPACE:
+                if evt.key == pygame.K_BACKSPACE:
                     name = name[:-1]
                 elif evt.key == pygame.K_RETURN:
                     return(name)
+                else: 
+                    name += evt.unicode
             elif evt.type == pygame.QUIT:
                 pygame.quit()
                 exit()
@@ -254,7 +252,6 @@ def getstring(message):
         welcome_surface = myfont.render(message,False,(128,128,128) )        
         welcome_surface_rect = welcome_surface.get_rect(center = sc(0,2))
         screen.blit(welcome_surface,welcome_surface_rect)
-          
         block = myfont.render(name, True, (255, 255, 255))
         rect = block.get_rect()
         rect.center = screen.get_rect().center
