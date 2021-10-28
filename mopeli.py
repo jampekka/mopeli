@@ -16,6 +16,8 @@ import shelve
 import pandas
 
 
+#XDIM=960
+#YDIM = 540
 
 YDIM = 1080
 XDIM = 1920
@@ -24,8 +26,10 @@ FPS = 60
 XDIM2 = XDIM/2
 YDIM2 = YDIM/2
 
-HORIZONTAL_FOV = 80
-PIX_PER_DEGREE = XDIM / HORIZONTAL_FOV
+
+# dont use these
+#HORIZONTAL_FOV = 80
+#PIX_PER_DEGREE = XDIM / HORIZONTAL_FOV
 
 LOGFILE = 'trial_log.csv'
 
@@ -40,14 +44,15 @@ def sy(y):
     return round(-y * 0.5 * YDIM + YDIM2)
 
 
-#-80,80 -> xdim,ydim
+#def sc(x,y):
+#    return (round(x*PIX_PER_DEGREE + XDIM2),round(-y*PIX_PER_DEGREE + YDIM2))
 
 def sc(x,y):
-    return (round(x*PIX_PER_DEGREE + XDIM2),round(-y*PIX_PER_DEGREE + YDIM2))
+    return (sx(x), sy(y))
 
 def sw(x):
     #transform width 
-    return round(x*PIX_PER_DEGREE)
+    return round(x * 0.5 * XDIM)
 
 def writelog(*args):
     with open(LOGFILE, 'a+', newline='') as csvfile:
@@ -61,8 +66,7 @@ class Orc(pygame.sprite.Sprite):
        super().__init__()
        col = pygame.Color(255, 255, 255) 
        
-       # circle radius given as viewing angle (degrees)
-       size = 3
+       size = 0.075
                
        self.size = sw(size)
        self.x0 = x0
@@ -110,8 +114,7 @@ class Orc_random(pygame.sprite.Sprite):
        super().__init__()
        col = pygame.Color(255, 255, 255) 
        
-       # circle radius given as viewing angle (degrees)
-       size = 3
+       size =0.075
        
        self.size = sw(size)
        self.mode = mode
@@ -185,7 +188,7 @@ class Road(pygame.sprite.Sprite):
     def __init__(self):
        super().__init__()
        self.col = 'yellow'
-       self.image = pygame.Surface( (sw(1),YDIM) )
+       self.image = pygame.Surface( (sw(1/40),YDIM) )
        
        self.image.fill(self.col)
        self.image.convert_alpha()
@@ -198,23 +201,23 @@ class Road(pygame.sprite.Sprite):
        
      
         
-def create_orcs(n_orcs,mode):
+# def create_orcs(n_orcs,mode):
     
-    orclist = []
-    for i in range(n_orcs):
-        xspeed = choice([-1,1])*randint(10,50)/100
-        if mode ==2:
-            yspeed = choice([-1,1])*randint(10,50)/100
-        else:
-            yspeed = 0
+#     orclist = []
+#     for i in range(n_orcs):
+#         xspeed = choice([-1,1])*randint(10,50)/100
+#         if mode ==2:
+#             yspeed = choice([-1,1])*randint(10,50)/100
+#         else:
+#             yspeed = 0
             
-        orclist.append( Orc(sx(randint(-40,40)),sy(randint(-21,21)),xspeed,yspeed))
-    return orclist
+#         orclist.append( Orc(sx(randint(-40,40)),sy(randint(-21,21)),xspeed,yspeed))
+#     return orclist
 
 def create_orcs_random(n_orcs,mode):
         
     orclist = []
-    a=0.2
+    a=0.005
     for i in range(n_orcs):
         
         orclist.append( Orc_random(mode, a))
@@ -236,7 +239,7 @@ def getstring(message):
                 exit()
         screen.fill((0, 0, 0))
         welcome_surface = myfont.render(message,False,(128,128,128) )        
-        welcome_surface_rect = welcome_surface.get_rect(center = sc(0,2))
+        welcome_surface_rect = welcome_surface.get_rect(center = sc(0,0.1))
         screen.blit(welcome_surface,welcome_surface_rect)
         block = myfont.render(name, True, (255, 255, 255))
         rect = block.get_rect()
@@ -273,12 +276,12 @@ def showhighscore():
         screen.fill((0, 0, 0))
         i=0
         welcome_surface = myfont.render('High scores',False,(128,128,128) )        
-        welcome_surface_rect = welcome_surface.get_rect(center = sc(0,11))
+        welcome_surface_rect = welcome_surface.get_rect(center = sc(0,0.9))
         screen.blit(welcome_surface,welcome_surface_rect)
         for k in dsort.keys():
             i+=1
             welcome_surface = myfont.render( (k + ':   ' + str(dsort[k]))  ,False,(128,128,128) )
-            welcome_surface_rect = welcome_surface.get_rect(center = sc(0,10-i))
+            welcome_surface_rect = welcome_surface.get_rect(center = sc(0,(0.8-(i*0.1))))
             screen.blit(welcome_surface,welcome_surface_rect)
             if i>10:
                 break
@@ -312,7 +315,7 @@ def gameover(name,score):
         screen.blit(welcome_surface,welcome_surface_rect)
         
         welcome_surface = myfont.render('Score: '+ str(score),False,(128,128,128) )        
-        welcome_surface_rect = welcome_surface.get_rect(center = sc(0,-2))
+        welcome_surface_rect = welcome_surface.get_rect(center = sc(0,-0.1))
         
         screen.blit(welcome_surface,welcome_surface_rect)
         
@@ -485,12 +488,12 @@ while True:
         screen.blit(name_surface,name_surface_rect)
         
         score_surface = myfont.render('score '+str(score),False,'gray')        
-        score_surface_rect = score_surface.get_rect(topleft = (0,sw(1.5)))        
+        score_surface_rect = score_surface.get_rect(topleft = (0,sw(0.05)))        
         screen.blit(score_surface,score_surface_rect)
         
         
         time_surface = myfont.render('time '+str(timeleft),False,'gray')
-        time_surface_rect = score_surface.get_rect(topleft = (0,sw(3)))
+        time_surface_rect = score_surface.get_rect(topleft = (0,sw(0.1)))
         screen.blit(time_surface,time_surface_rect)
         
         if timeleft <= 0:

@@ -24,13 +24,13 @@ open(filename, 'w').close()   #empty file
 time = 500  #  time start in ms
 vx0=1
 
-scale = 800  
+scale = 20 
 
 for i in range(100):
-    time = time + (scale / abs(vx0))  # time when previous ball crosses center
+    time = time + ( scale / abs(vx0))  # time when previous ball crosses center
     x0 = choice([-1,1])  
     y0 = choice([-1,1])*random()    
-    vx0 = -x0 * (random()/2 + 0.1)
+    vx0 = -x0 * (random()/80 + 0.01)
     vy0 = 0
     writelog(time,x0,y0,vx0,vy0)
     
