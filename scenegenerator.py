@@ -24,7 +24,7 @@ open(filename, 'w').close()   #empty file
 time = 500  #  time start in ms
 vx0=1
 
-scale = 20 
+scale = 1000/60
 
 for i in range(100):
     time = time + ( scale / abs(vx0))  # time when previous ball crosses center
