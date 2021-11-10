@@ -32,7 +32,7 @@ YDIM2 = YDIM/2
 #PIX_PER_DEGREE = XDIM / HORIZONTAL_FOV
 
 LOGFILE = 'trial_log.csv'
-
+active_logfile = LOGFILE
 
 # transform natural coordinates to screen coordinates
 
@@ -55,7 +55,7 @@ def sw(x):
     return round(x * 0.5 * XDIM)
 
 def writelog(*args):
-    with open(LOGFILE, 'a+', newline='') as csvfile:
+    with open(active_logfile, 'a+', newline='') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=',',
                          quotechar='|', quoting=csv.QUOTE_MINIMAL)
         spamwriter.writerow(args)
@@ -383,6 +383,7 @@ myfont = pygame.font.SysFont('arial', 30)
 #scores
 d=shelve.open('score.txt')
 scenarios_left = argv[1:]
+scenefile = None
 
 while True:
     for event in pygame.event.get():
@@ -393,6 +394,7 @@ while True:
         if not game_active:
         # mainmenu
             if event.type == pygame.KEYDOWN or len(scenarios_left) > 0:
+                scenefile = None
                 if len(scenarios_left) > 0:
                     mode = 3
                     scenefile = scenarios_left.pop(0)
@@ -416,7 +418,11 @@ while True:
                     start_time = pygame.time.get_ticks()
                     
                     #create new logfile
-                    with open(LOGFILE, 'w+', newline='') as csvfile:
+                    if scenefile:
+                        active_logfile = scenefile + ".log"
+                    else:
+                        active_logfile = LOGFILE
+                    with open(active_logfile, 'w+', newline='') as csvfile:
                         spamwriter = csv.writer(csvfile, delimiter=',',
                                          quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
