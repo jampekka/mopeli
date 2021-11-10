@@ -496,7 +496,7 @@ while True:
         time_surface_rect = score_surface.get_rect(topleft = (0,sw(0.1)))
         screen.blit(time_surface,time_surface_rect)
         
-        if timeleft <= 0:
+        if (mode != 3 and timeleft <= 0) or (mode == 3 and not ok):
             mode = 0
             game_active = False
             gameover(name,score)
