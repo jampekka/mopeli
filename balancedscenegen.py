@@ -8,7 +8,7 @@ import random
 
 n_lanes = 7
 n_speeds = 7
-n_repeats = 3
+n_repeats = 1
 speed_range = 0.4, 1.4
 start_time = 0.5
 FPS = 60
@@ -31,13 +31,18 @@ for repeat, x0, y0, vx0 in itertools.product(repeats, xs, lanes, speeds):
     #print(",".join(map(str, (lane, y, speed))))
 random.shuffle(trials)
 
+side = -1**(random.random() < 0.5)
 time = start_time
 for x0, y0, vx0, vy0 in trials:
+    # Override the direction so they alternate
+    x0 = np.abs(x0)*side
+    vx0 = -np.abs(vx0)*side
     print(",".join(map(str, (time*1000, x0, y0, vx0, vy0))))
     speed_in_secs = vx0*FPS
     duration = -x0/speed_in_secs
     time += duration
+    side *= -1
 
 # Add dummy row so the game doesn't end prematurely
-print(",".join(map(str, ((time + 0.3)*1000, x0, y0, vx0, vy0))))
+print(",".join(map(str, ((time + 0.3)*1000, 100, y0, vx0, vy0))))
 #block = 
