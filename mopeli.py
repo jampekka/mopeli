@@ -8,7 +8,7 @@ developed with pygame 2.0.1 (SDL 2.0.14, Python 3.8.10)
 
 #import numpy as np
 import pygame
-from sys import exit
+from sys import exit, argv
 from random import random,randint, choice
 from scipy.stats import maxwell
 import csv
@@ -382,6 +382,7 @@ myfont = pygame.font.SysFont('arial', 30)
 
 #scores
 d=shelve.open('score.txt')
+scenarios_left = argv[1:]
 
 while True:
     for event in pygame.event.get():
@@ -391,8 +392,14 @@ while True:
 
         if not game_active:
         # mainmenu
-            if event.type == pygame.KEYDOWN :
-                if event.key == pygame.K_1:
+            if event.type == pygame.KEYDOWN or len(scenarios_left) > 0:
+                if len(scenarios_left) > 0:
+                    mode = 3
+                    scenefile = scenarios_left.pop(0)
+                    df = pandas.read_csv(scenefile,names=['time','x0','y0','vx0','vy0'])
+                    df = df[df['x0']<888]
+                    rowindex = 0
+                elif event.key == pygame.K_1:
                     mode = 1
                 elif event.key == pygame.K_2:
                     mode = 2
@@ -403,7 +410,7 @@ while True:
                 elif event.key == pygame.K_h:
                     showhighscore()
                     
-                if mode:   
+                if mode:
                     name = getname()
                     start_countdown()
                     start_time = pygame.time.get_ticks()
