@@ -11,6 +11,7 @@ n_speeds = 7
 n_repeats = 1
 speed_range = 0.4, 1.4
 start_time = 0.5
+time_padding = 0.5
 FPS = 60
 
 object_size = 0.075
@@ -40,7 +41,7 @@ for x0, y0, vx0, vy0 in trials:
     print(",".join(map(str, (time*1000, x0, y0, vx0, vy0))))
     speed_in_secs = vx0*FPS
     duration = -x0/speed_in_secs
-    time += duration
+    time += duration + time_padding
     side *= -1
 
 # Add dummy row so the game doesn't end prematurely
