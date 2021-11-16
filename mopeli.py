@@ -8,7 +8,7 @@ developed with pygame 2.0.1 (SDL 2.0.14, Python 3.8.10)
 
 #import numpy as np
 import pygame
-from sys import exit
+from sys import exit, argv
 from random import random,randint, choice
 from scipy.stats import maxwell
 import csv
@@ -32,7 +32,7 @@ YDIM2 = YDIM/2
 #PIX_PER_DEGREE = XDIM / HORIZONTAL_FOV
 
 LOGFILE = 'trial_log.csv'
-
+active_logfile = LOGFILE
 
 # transform natural coordinates to screen coordinates
 
@@ -55,7 +55,7 @@ def sw(x):
     return round(x * 0.5 * XDIM)
 
 def writelog(*args):
-    with open(LOGFILE, 'a+', newline='') as csvfile:
+    with open(active_logfile, 'a+', newline='') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=',',
                          quotechar='|', quoting=csv.QUOTE_MINIMAL)
         spamwriter.writerow(args)
@@ -362,7 +362,7 @@ def readscene():
 pygame.init()
 pygame.font.init()
 
-screen = pygame.display.set_mode((XDIM,YDIM))
+screen = pygame.display.set_mode((XDIM,YDIM), flags=pygame.NOFRAME | pygame.SCALED)
 pygame.display.set_caption('Mopeli')
 
 clock = pygame.time.Clock()
@@ -382,6 +382,8 @@ myfont = pygame.font.SysFont('arial', 30)
 
 #scores
 d=shelve.open('score.txt')
+scenarios_left = argv[1:]
+scenefile = None
 
 while True:
     for event in pygame.event.get():
@@ -391,8 +393,15 @@ while True:
 
         if not game_active:
         # mainmenu
-            if event.type == pygame.KEYDOWN :
-                if event.key == pygame.K_1:
+            if event.type == pygame.KEYDOWN or len(scenarios_left) > 0:
+                scenefile = None
+                if len(scenarios_left) > 0:
+                    mode = 3
+                    scenefile = scenarios_left.pop(0)
+                    df = pandas.read_csv(scenefile,names=['time','x0','y0','vx0','vy0'])
+                    df = df[df['x0']<888]
+                    rowindex = 0
+                elif event.key == pygame.K_1:
                     mode = 1
                 elif event.key == pygame.K_2:
                     mode = 2
@@ -403,13 +412,17 @@ while True:
                 elif event.key == pygame.K_h:
                     showhighscore()
                     
-                if mode:   
+                if mode:
                     name = getname()
                     start_countdown()
                     start_time = pygame.time.get_ticks()
                     
                     #create new logfile
-                    with open(LOGFILE, 'w+', newline='') as csvfile:
+                    if scenefile:
+                        active_logfile = scenefile + ".log"
+                    else:
+                        active_logfile = LOGFILE
+                    with open(active_logfile, 'w+', newline='') as csvfile:
                         spamwriter = csv.writer(csvfile, delimiter=',',
                                          quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
@@ -496,7 +509,7 @@ while True:
         time_surface_rect = score_surface.get_rect(topleft = (0,sw(0.1)))
         screen.blit(time_surface,time_surface_rect)
         
-        if timeleft <= 0:
+        if (mode != 3 and timeleft <= 0) or (mode == 3 and not ok):
             mode = 0
             game_active = False
             gameover(name,score)
