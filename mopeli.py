@@ -328,10 +328,10 @@ def start_countdown():
             if evt.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-            if evt.type == pygame.KEYDOWN:
+            if evt.type == pygame.KEYDOWN and evt.key == pygame.K_SPACE:
                 return
         screen.fill((0, 0, 0))
-        welcome_surface = myfont.render('Press any key to start the game',False,(128,128,128) )        
+        welcome_surface = myfont.render('Press space to start the game',False,(128,128,128) )        
         welcome_surface_rect = welcome_surface.get_rect(center = sc(0,0))
         screen.blit(welcome_surface,welcome_surface_rect)
         pygame.display.flip()
@@ -416,7 +416,7 @@ while True:
                     name = getname()
                     start_countdown()
                     start_time = pygame.time.get_ticks()
-                    
+                    pressed = 1
                     #create new logfile
                     if scenefile:
                         active_logfile = scenefile + ".log"
@@ -500,9 +500,25 @@ while True:
         name_surface_rect = name_surface.get_rect(topleft = (0,0))
         screen.blit(name_surface,name_surface_rect)
         
-        score_surface = myfont.render('score '+str(score),False,'gray')        
-        score_surface_rect = score_surface.get_rect(topleft = (0,sw(0.05)))        
+        score_surface = myfont.render('Score: ',False,'gray')
+        score_surface_rect = score_surface.get_rect(topleft = (0,48))
         screen.blit(score_surface,score_surface_rect)
+        
+        topr = score_surface_rect.topright 
+        
+        coin_surface = pygame.Surface([score//4,24])
+        
+        for i in range(30):
+            pygame.draw.circle(coin_surface,'yellow',[12+24*i,12],12)
+        
+        coin_surface.set_colorkey((0,0,0))
+        coin_surface.convert_alpha()
+        coin_surface_rect = coin_surface.get_rect(topleft = topr)
+        
+        
+        #coin_surface_rect.topright = (topr[0]+score//2,topr[1])
+        
+        screen.blit(coin_surface,coin_surface_rect)
         
         
         time_surface = myfont.render('time '+str(timeleft),False,'gray')
