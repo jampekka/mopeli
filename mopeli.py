@@ -13,7 +13,7 @@ from random import random,randint, choice
 from scipy.stats import maxwell
 import csv
 import shelve
-import pandas
+import pandas as pd 
 
 
 #XDIM=960
@@ -26,13 +26,13 @@ FPS = 60
 XDIM2 = XDIM/2
 YDIM2 = YDIM/2
 
+trial_length = 60 
 
-# dont use these
-#HORIZONTAL_FOV = 80
-#PIX_PER_DEGREE = XDIM / HORIZONTAL_FOV
 
 LOGFILE = 'trial_log.csv'
+FRAMELOGFILE= 'frame_log.csv'
 active_logfile = LOGFILE
+active_framelogfile = FRAMELOGFILE
 
 # transform natural coordinates to screen coordinates
 
@@ -346,7 +346,7 @@ def readscene():
         if not scenefile:
             scenefile = 'scene1.csv'
         try:
-            df = pandas.read_csv(scenefile,names=['time','x0','y0','vx0','vy0'])
+            df = pd.read_csv(scenefile,names=['time','x0','y0','vx0','vy0'])
             print('read ' + scenefile)
             ok=1
         
@@ -377,7 +377,7 @@ road = pygame.sprite.GroupSingle(roadsprite)
 mode = 0
 pressed = 0 
 
-trial_length = 60 
+
 myfont = pygame.font.SysFont('arial', 30)
 
 #scores
@@ -398,7 +398,7 @@ while True:
                 if len(scenarios_left) > 0:
                     mode = 3
                     scenefile = scenarios_left.pop(0)
-                    df = pandas.read_csv(scenefile,names=['time','x0','y0','vx0','vy0'])
+                    df = pd.read_csv(scenefile,names=['time','x0','y0','vx0','vy0'])
                     df = df[df['x0']<888]
                     rowindex = 0
                 elif event.key == pygame.K_1:
@@ -420,8 +420,10 @@ while True:
                     #create new logfile
                     if scenefile:
                         active_logfile = scenefile + ".log"
+                        active_framelogfile = scenefile + 'framelog.csv'
                     else:
                         active_logfile = LOGFILE
+                        active_framelogfile = FRAMELOGFILE
                     with open(active_logfile, 'w+', newline='') as csvfile:
                         spamwriter = csv.writer(csvfile, delimiter=',',
                                          quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -432,6 +434,19 @@ while True:
                         orc_group.add(create_orcs_random(7,mode))
                     score = 0
                     game_active = True
+                    framenumber = 0
+                    
+                    # create dataframe for logging per frame stuff
+                    maxorcs = 10
+                    orccols=[]
+                    for i in range(maxorcs):
+                        s = str(i)    
+                        orccols.extend(['x'+s,'y'+s,'vx'+s,'vy'+s])
+                        
+                    column_names = ['frame','time','pressed']
+                    column_names.extend(orccols)
+                    framelog = pd.DataFrame(columns=column_names)
+                    
                     print("peli alkaa!")
                                         
         else:
@@ -454,6 +469,7 @@ while True:
                 writelog(time,999,0,0,0)
                 
     if game_active:
+        framenumber += 1
         time = pygame.time.get_ticks() - start_time
         
         timeleft = trial_length-time//1000
@@ -494,8 +510,6 @@ while True:
         orc_group.update()
         orc_group.draw(screen)        
         
-        
-        
         name_surface = myfont.render('Player: '+name,False,'gray')   
         name_surface_rect = name_surface.get_rect(topleft = (0,0))
         screen.blit(name_surface,name_surface_rect)
@@ -506,7 +520,11 @@ while True:
         
         topr = score_surface_rect.topright 
         
-        coin_surface = pygame.Surface([score//4,24])
+        if(score>0):
+            l = score//6
+        else:
+            l=0
+        coin_surface = pygame.Surface([l,24])
         
         for i in range(30):
             pygame.draw.circle(coin_surface,'yellow',[12+24*i,12],12)
@@ -519,17 +537,33 @@ while True:
         #coin_surface_rect.topright = (topr[0]+score//2,topr[1])
         
         screen.blit(coin_surface,coin_surface_rect)
-        
-        
+               
         time_surface = myfont.render('time '+str(timeleft),False,'gray')
         time_surface_rect = score_surface.get_rect(topleft = (0,sw(0.1)))
         screen.blit(time_surface,time_surface_rect)
+        
+        #framelog
+
+        row = {'frame':framenumber,'time':time,'pressed':pressed}
+        orcrow = {}
+        for i,o in enumerate(orc_group):
+            orcrow.update( {'x'+str(i):o.rect.x})
+            orcrow.update( {'y'+str(i):o.rect.y} )
+            orcrow.update( {'vx'+str(i):o.vx} )
+            orcrow.update( {'vy'+str(i):o.vy} )
+        
+        row.update(orcrow)
+        
+        framelog = framelog.append(row,ignore_index=True)
+        
+        if(timeleft<=0):
+            framelog.to_csv(active_framelogfile)
         
         if (mode != 3 and timeleft <= 0) or (mode == 3 and not ok):
             mode = 0
             game_active = False
             gameover(name,score)
-         
+                     
                      
          
     else:
