@@ -62,6 +62,9 @@ def writelog(*args):
 
 class Orc(pygame.sprite.Sprite):
     # orcs that die when travelling off screen
+    # position coordinates: screen edges are at -1 and 1
+    # speed is given in halfscreens/second
+    
     def __init__(self,x0,y0,vx,vy):
        super().__init__()
        col = pygame.Color(255, 255, 255) 
@@ -72,11 +75,13 @@ class Orc(pygame.sprite.Sprite):
        self.x0 = x0
        self.y0 = y0
        
+       # save initial values
        self.vx0 = vx
        self.vy0 = vy
 
-       self.vx = sw(vx)
-       self.vy= sw(vy)
+       # convert speeds to pixels/frame
+       self.vx = sw(vx)/FPS
+       self.vy= sw(vy)/FPS
 
        
        self.image = pygame.Surface([self.size,self.size])
@@ -408,6 +413,7 @@ while True:
                 elif event.key == pygame.K_3:
                     mode = 3
                     df = readscene()
+                    trial_length = df['time'].iloc[-1] // 1000 + 3 
                     rowindex = 0
                 elif event.key == pygame.K_h:
                     showhighscore()
@@ -420,7 +426,7 @@ while True:
                     #create new logfile
                     if scenefile:
                         active_logfile = scenefile + ".log"
-                        active_framelogfile = scenefile + 'framelog.csv'
+                        active_framelogfile = scenefile + '_framelog.csv'
                     else:
                         active_logfile = LOGFILE
                         active_framelogfile = FRAMELOGFILE
@@ -475,16 +481,22 @@ while True:
         timeleft = trial_length-time//1000
         
         if mode == 3:
+            # try:
+            #     row = df.iloc[rowindex]
+            #     ok = 1
+            # except:
+                
+            #     ok = 0
+            #if row.time <= time and ok:
             try:
                 row = df.iloc[rowindex]
+                if row.time <= time:
+                    print('row number: ' +str(rowindex) + ' ' + str(time))                    
+                    orc_group.add( Orc(row.x0,row.y0,row.vx0,row.vy0) )
+                    rowindex += 1
                 ok = 1
             except:
-                
                 ok = 0
-            if row.time <= time and ok:
-                print('row number: ' +str(rowindex) + ' ' + str(time))                    
-                orc_group.add( Orc(row.x0,row.y0,row.vx0,row.vy0) )
-                rowindex += 1
             
         
         # print("peli käy")
@@ -556,10 +568,11 @@ while True:
         
         framelog = framelog.append(row,ignore_index=True)
         
+        
+        #if (mode != 3 and timeleft <= 0) or (mode == 3 and not ok):
+        
         if(timeleft<=0):
             framelog.to_csv(active_framelogfile)
-        
-        if (mode != 3 and timeleft <= 0) or (mode == 3 and not ok):
             mode = 0
             game_active = False
             gameover(name,score)
