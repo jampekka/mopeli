@@ -73,7 +73,7 @@ for i,l in enumerate(trials_leftside):
     
     #delay = 0
     delay = tslow - tfast    #frameratefixtry
-    print(delay)
+    #print(delay)
     
     pair.append(delay)
     
