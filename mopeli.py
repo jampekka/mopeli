@@ -79,7 +79,7 @@ class Orc(pygame.sprite.Sprite):
        self.vx0 = vx
        self.vy0 = vy
 
-       # convert speeds to pixels/frame
+       
        self.vx = sw(vx)/FPS
        self.vy= sw(vy)/FPS
 
@@ -458,6 +458,7 @@ while True:
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 game_active = False                
+                
                 print('peli loppuu!')
                 mode = 0
                 
@@ -515,7 +516,26 @@ while True:
                 score += 1
             
         road.update()
-        road.draw(screen)          
+        road.draw(screen) 
+
+        #framelog
+
+        row = {'frame':framenumber,'time':time,'pressed':pressed}
+        orcrow = {}
+        for i,o in enumerate(orc_group):
+            ox = o.rect.center[0]
+            oy = o.rect.center[1]
+            orcrow.update( {'x'+str(i):ox})
+            orcrow.update( {'y'+str(i):oy} )
+            orcrow.update( {'vx'+str(i):o.vx} )
+            orcrow.update( {'vy'+str(i):o.vy} )
+        
+        row.update(orcrow)        
+        framelog = framelog.append(row,ignore_index=True)
+        
+        
+        
+        
             #screen.blit(road_surf, road_rect)
         
         
@@ -554,20 +574,7 @@ while True:
         time_surface_rect = score_surface.get_rect(topleft = (0,sw(0.1)))
         screen.blit(time_surface,time_surface_rect)
         
-        #framelog
 
-        row = {'frame':framenumber,'time':time,'pressed':pressed}
-        orcrow = {}
-        for i,o in enumerate(orc_group):
-            orcrow.update( {'x'+str(i):o.rect.x})
-            orcrow.update( {'y'+str(i):o.rect.y} )
-            orcrow.update( {'vx'+str(i):o.vx} )
-            orcrow.update( {'vy'+str(i):o.vy} )
-        
-        row.update(orcrow)
-        
-        framelog = framelog.append(row,ignore_index=True)
-        
         
         #if (mode != 3 and timeleft <= 0) or (mode == 3 and not ok):
         
