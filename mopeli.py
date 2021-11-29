@@ -423,6 +423,7 @@ while True:
                     scenefile = scenarios_left.pop(0)
                     df = pd.read_csv(scenefile,names=['time','x0','y0','vx0','vy0'])
                     df = df[df['x0']<888]
+                    trial_length = df['time'].iloc[-1] // 1000 + 3 
                     rowindex = 0
                 elif event.key == pygame.K_1:
                     mode = 1
