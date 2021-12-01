@@ -38,10 +38,10 @@ active_framelogfile = FRAMELOGFILE
 
 # -1,1 -> xdim, ydim
 def sx(x):
-    return round(x * 0.5 * XDIM + XDIM2)
+    return (x * 0.5 * XDIM + XDIM2)
 
 def sy(y):
-    return round(-y * 0.5 * YDIM + YDIM2)
+    return (-y * 0.5 * YDIM + YDIM2)
 
 
 #def sc(x,y):
@@ -52,7 +52,7 @@ def sc(x,y):
 
 def sw(x):
     #transform width 
-    return round(x * 0.5 * XDIM)
+    return (x * 0.5 * XDIM)
 
 def writelog(*args):
     with open(active_logfile, 'a+', newline='') as csvfile:
@@ -78,7 +78,7 @@ class Orc(pygame.sprite.Sprite):
        # save initial values
        self.vx0 = vx
        self.vy0 = vy
-
+       
        
        self.vx = sw(vx)/FPS
        self.vy= sw(vy)/FPS
@@ -89,15 +89,25 @@ class Orc(pygame.sprite.Sprite):
        pygame.draw.circle(self.image,col,(self.size//2,self.size//2),self.size//2)
        self.image.convert_alpha()
        self.rect = self.image.get_rect(center=(sx(self.x0),sy(self.y0)))
+       
+       # since rect.x is forced int, we need these variables
+       # to keep "precise" location information
+       self.float_x = float(self.rect.x)
+       self.float_y = float(self.rect.y)
+       
        self.created_time = pygame.time.get_ticks() - start_time
        writelog(self.created_time,self.x0,self.y0,self.vx0,self.vy0)
               
     
-    def update(self):       
-       self.rect.x += self.vx
-       self.rect.y += self.vy
-       self.flip()
-    
+    def update(self):
+        self.float_x += self.vx
+        self.float_y += self.vy
+        
+        self.rect.x = round(self.float_x)
+        self.rect.y = round(self.float_y)
+        
+        self.flip()
+     
     def flip(self):
        if self.rect.x >= XDIM and self.vx>0:
            
