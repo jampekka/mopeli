@@ -44,8 +44,10 @@ def sy(y):
     return (-y * 0.5 * YDIM + YDIM2)
 
 
-#def sc(x,y):
-#    return (round(x*PIX_PER_DEGREE + XDIM2),round(-y*PIX_PER_DEGREE + YDIM2))
+def isx(x):
+    # xdim ->  -1, 1
+    return 2*(x - XDIM2)/XDIM
+    
 
 def sc(x,y):
     return (sx(x), sy(y))
@@ -53,6 +55,10 @@ def sc(x,y):
 def sw(x):
     #transform width 
     return (x * 0.5 * XDIM)
+
+def sh(y):
+    # transform height
+    return (y * 0.5 * YDIM)
 
 def writelog(*args):
     with open(active_logfile, 'a+', newline='') as csvfile:
@@ -75,7 +81,7 @@ class Orc(pygame.sprite.Sprite):
        self.x0 = x0
        self.y0 = y0
        
-       # save initial values
+       # save initial values (these are halfscreen-coordinates)
        self.vx0 = vx
        self.vy0 = vy
        
@@ -159,15 +165,15 @@ class Orc_random(pygame.sprite.Sprite):
         if self.mode==1:
             self.vy0=0
             self.vx0 = -self.x0 * maxwell.rvs(loc=0,scale =self.a)
-            self.vx = sw( self.vx0 )
+            self.vx = sw( self.vx0 ) /FPS
             self.vy = 0
             
         if self.mode==2:
             self.vx0 = -self.x0 * maxwell.rvs(loc=0,scale =self.a)
             self.vy0 = choice([-1,1]) * maxwell.rvs(loc=0,scale =self.a)
             
-            self.vx = sw( self.vx0 )
-            self.vy = sw( self.vy0 )
+            self.vx = sw( self.vx0 ) /FPS
+            self.vy = sw( self.vy0 ) /FPS
         
     
     def flip(self):
@@ -232,7 +238,7 @@ class Road(pygame.sprite.Sprite):
 def create_orcs_random(n_orcs,mode):
         
     orclist = []
-    a=0.005
+    a=0.5
     for i in range(n_orcs):
         
         orclist.append( Orc_random(mode, a))
@@ -367,7 +373,7 @@ def readscene():
         
         except:
             print('problem reading ' + scenefile)
-            ok=0
+        #     ok=0
         df = df[df['x0']<888]
     return df
 
@@ -451,6 +457,8 @@ while True:
                     score = 0
                     game_active = True
                     framenumber = 0
+                    hit = 0
+                    alreadyhit = 0
                     
                     # create dataframe for logging per frame stuff
                     maxorcs = 10
@@ -459,7 +467,7 @@ while True:
                         s = str(i)    
                         orccols.extend(['x'+s,'y'+s,'vx'+s,'vy'+s])
                         
-                    column_names = ['frame','time','pressed']
+                    column_names = ['frame','time','pressed','hit','alreadyhit','score']
                     column_names.extend(orccols)
                     framelog = pd.DataFrame(columns=column_names)
                     
@@ -478,10 +486,13 @@ while True:
                     time = pygame.time.get_ticks() - start_time
                     writelog(time,888,0,0,0)
                     pressed = 1
-                
+                    
+                    hit = 0 
+                    alreadyhit = 0 
+                                
                 
             elif event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
-                pressed = 0
+                pressed = 0                
                 time = pygame.time.get_ticks() - start_time
                 writelog(time,999,0,0,0)
                 
@@ -514,23 +525,40 @@ while True:
         screen.fill((0, 0, 0))
         
         road.sprite.setcolor("gray20")
-        if pressed:
-            hit = pygame.sprite.groupcollide(road, orc_group,False,False)
-            
-            if hit:
+        
+        if not pressed:
+            hitsprite = pygame.sprite.groupcollide(road, orc_group,False,False)
+            if hitsprite:
+                hit = 1
                 road.sprite.setcolor('red')
-                score -=4
-               
             else:
+                hit = 0
+                alreadyhit = 0
                 road.sprite.setcolor('yellow')
-                score += 1
-            
+
+                # calculate score for this frame by summing ball speeds
+                # ball travels half screen == 100 points
+                # score increases until ball crosses midline
+                
+                for o in orc_group:
+                    ox = isx(o.rect.center[0])
+                    if (ox<0 and o.vx0>0) or (ox>0 and o.vx0<0):
+                        score += abs(o.vx0)/FPS * 100
+                        print(score)
+
+            # first frame when ball hits the bar                                                    
+            if hit and not alreadyhit:     
+                alreadyhit = 1
+                if score>100:
+                    score -= 100
+    
+                
         road.update()
         road.draw(screen) 
 
         #framelog
 
-        row = {'frame':framenumber,'time':time,'pressed':pressed}
+        row = {'frame':framenumber,'time':time,'pressed':pressed,'hit':hit,'alreadyhit':alreadyhit,'score':score}
         orcrow = {}
         for i,o in enumerate(orc_group):
             ox = o.rect.center[0]
@@ -543,9 +571,6 @@ while True:
         row.update(orcrow)        
         framelog = framelog.append(row,ignore_index=True)
         
-        
-        
-        
             #screen.blit(road_surf, road_rect)
         
         
@@ -557,23 +582,27 @@ while True:
         screen.blit(name_surface,name_surface_rect)
         
         score_surface = myfont.render('Score: ',False,'gray')
-        score_surface_rect = score_surface.get_rect(topleft = (0,48))
+        score_surface_rect = score_surface.get_rect(topleft = (sx(-1),sy(-0.9)))
         screen.blit(score_surface,score_surface_rect)
         
-        topr = score_surface_rect.topright 
+        score_right_edge = score_surface_rect.midright 
+        
+        # coin radius 
+        coinsize = 12 
         
         if(score>0):
-            l = score//6
+            # 100 points == one ball width 
+            l = (score/100) * 2 * coinsize 
         else:
             l=0
-        coin_surface = pygame.Surface([l,24])
+        coin_surface = pygame.Surface([l,coinsize*2])
         
-        for i in range(30):
-            pygame.draw.circle(coin_surface,'yellow',[12+24*i,12],12)
+        for i in range(100):
+            pygame.draw.circle(coin_surface,'yellow',[coinsize+(coinsize*2)*i,coinsize],coinsize)
         
         coin_surface.set_colorkey((0,0,0))
         coin_surface.convert_alpha()
-        coin_surface_rect = coin_surface.get_rect(topleft = topr)
+        coin_surface_rect = coin_surface.get_rect(midleft = score_right_edge)
         
         
         #coin_surface_rect.topright = (topr[0]+score//2,topr[1])
@@ -581,7 +610,7 @@ while True:
         screen.blit(coin_surface,coin_surface_rect)
                
         time_surface = myfont.render('time '+str(timeleft),False,'gray')
-        time_surface_rect = score_surface.get_rect(topleft = (0,sw(0.1)))
+        time_surface_rect = score_surface.get_rect(topleft = (sx(-1),sy(0.9)))
         screen.blit(time_surface,time_surface_rect)
         
 
