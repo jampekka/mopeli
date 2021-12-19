@@ -359,7 +359,7 @@ def start_countdown():
         
     
 def readscene():
-    ok = 0  # return null if cant read scenefile.. 
+    ok=0
     while not ok:
         message = 'enter scenary file (default: scene1.csv)'
         scenefile = getstring(message)
@@ -368,13 +368,15 @@ def readscene():
             scenefile = 'scene1.csv'
         try:
             df = pd.read_csv(scenefile,names=['time','x0','y0','vx0','vy0'])
+            df = df[df['x0']<888]
             print('read ' + scenefile)
-            ok=1
+            ok = 1
         
         except:
             print('problem reading ' + scenefile)
-        #     ok=0
-        df = df[df['x0']<888]
+            ok = 0
+            return None
+        
     return df
 
     
@@ -426,11 +428,16 @@ while True:
                     mode = 1
                 elif event.key == pygame.K_2:
                     mode = 2
-                elif event.key == pygame.K_3:
-                    mode = 3
+                elif event.key == pygame.K_3:                    
                     df = readscene()
-                    trial_length = df['time'].iloc[-1] // 1000 + 3 
-                    rowindex = 0
+                    if(df is not None):
+                        mode = 3
+                        trial_length = df['time'].iloc[-1] // 1000 + 3 
+                        rowindex = 0
+                    else:
+                        # failed reading file 
+                        print('problem with scenefile')
+                        mode = 0
                 elif event.key == pygame.K_h:
                     showhighscore()
                     
@@ -511,14 +518,21 @@ while True:
             #     ok = 0
             #if row.time <= time and ok:
             try:
-                row = df.iloc[rowindex]
-                if row.time <= time:
+                scenerow = df.iloc[rowindex]
+                
+                #if scenerow.time <= time:
+                
+                # read all the rows that are supposed to display on this frame
+                while scenerow.time <= time:                    
                     print('row number: ' +str(rowindex) + ' ' + str(time))                    
-                    orc_group.add( Orc(row.x0,row.y0,row.vx0,row.vy0) )
+                    orc_group.add( Orc(scenerow.x0,scenerow.y0,scenerow.vx0,scenerow.vy0) )
                     rowindex += 1
-                ok = 1
+                    scenerow = df.iloc[rowindex]
+                    
+                
             except:
-                ok = 0
+                
+                print('problem reading next row in scenefile')
             
         
         # print("peli käy")
@@ -526,7 +540,7 @@ while True:
         
         road.sprite.setcolor("gray20")
         
-        if not pressed:
+        if pressed:
             hitsprite = pygame.sprite.groupcollide(road, orc_group,False,False)
             if hitsprite:
                 hit = 1
@@ -544,7 +558,7 @@ while True:
                     ox = isx(o.rect.center[0])
                     if (ox<0 and o.vx0>0) or (ox>0 and o.vx0<0):
                         score += abs(o.vx0)/FPS * 100
-                        print(score)
+                        
 
             # first frame when ball hits the bar                                                    
             if hit and not alreadyhit:     
@@ -558,7 +572,7 @@ while True:
 
         #framelog
 
-        row = {'frame':framenumber,'time':time,'pressed':pressed,'hit':hit,'alreadyhit':alreadyhit,'score':score}
+        logrow = {'frame':framenumber,'time':time,'pressed':pressed,'hit':hit,'alreadyhit':alreadyhit,'score':score}
         orcrow = {}
         for i,o in enumerate(orc_group):
             ox = o.rect.center[0]
@@ -568,8 +582,8 @@ while True:
             orcrow.update( {'vx'+str(i):o.vx} )
             orcrow.update( {'vy'+str(i):o.vy} )
         
-        row.update(orcrow)        
-        framelog = framelog.append(row,ignore_index=True)
+        logrow.update(orcrow)        
+        framelog = framelog.append(logrow,ignore_index=True)
         
             #screen.blit(road_surf, road_rect)
         
